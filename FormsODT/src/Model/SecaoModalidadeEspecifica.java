@@ -15,6 +15,7 @@ public class SecaoModalidadeEspecifica {
     private List<CampusIfes> unidadesMulticampi = new ArrayList<>();
 
     // Para Evento (Pergunta 15)
+    private List<ItemProgramacaoEvento> itensProgramacaoEvento = new ArrayList<>();
     private String programacaoEvento = "";
 
     // Para Prestação de Serviços (Perguntas 16 a 20)
@@ -50,7 +51,34 @@ public class SecaoModalidadeEspecifica {
         this.unidadesMulticampi = unidadesMulticampi;
     }
 
+    public List<ItemProgramacaoEvento> getItensProgramacaoEvento() {
+        return itensProgramacaoEvento;
+    }
+
+    public void setItensProgramacaoEvento(List<ItemProgramacaoEvento> itensProgramacaoEvento) {
+        this.itensProgramacaoEvento = itensProgramacaoEvento != null ? itensProgramacaoEvento : new ArrayList<>();
+    }
+
     public String getProgramacaoEvento() {
+        if (!itensProgramacaoEvento.isEmpty()) {
+            StringBuilder sb = new StringBuilder();
+            int count = 1;
+            for (ItemProgramacaoEvento item : itensProgramacaoEvento) {
+                sb.append("Atividade ").append(count++).append(": ")
+                  .append(item.getAtividade());
+                if (!item.getData().isEmpty() || !item.getHorario().isEmpty()) {
+                    sb.append(" (").append(item.getData()).append(" ").append(item.getHorario()).append(")");
+                }
+                if (!item.getLocal().isEmpty()) {
+                    sb.append(" - Local: ").append(item.getLocal());
+                }
+                if (!item.getResponsavel().isEmpty()) {
+                    sb.append(" - Responsável: ").append(item.getResponsavel());
+                }
+                sb.append("\n");
+            }
+            return sb.toString().trim();
+        }
         return programacaoEvento;
     }
 

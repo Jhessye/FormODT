@@ -12,7 +12,6 @@ public class DadosCadastrais {
     private TipoCargo cargo = TipoCargo.DOCENTE;
     private String setor = "";
     private CampusIfes campus = CampusIfes.VITORIA;
-    private String emailSetorExtensao = "";
     private String inicioVigencia = "";
     private String fimVigencia = "";
     private InovacaoResposta propostaInovadora = InovacaoResposta.NAO;
@@ -73,14 +72,6 @@ public class DadosCadastrais {
 
     public void setCampus(CampusIfes campus) {
         this.campus = campus;
-    }
-
-    public String getEmailSetorExtensao() {
-        return emailSetorExtensao;
-    }
-
-    public void setEmailSetorExtensao(String emailSetorExtensao) {
-        this.emailSetorExtensao = emailSetorExtensao;
     }
 
     public String getInicioVigencia() {
