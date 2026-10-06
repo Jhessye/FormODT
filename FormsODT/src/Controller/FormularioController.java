@@ -85,7 +85,6 @@ public class FormularioController {
         dc.setCargo(view.getCargoSelecionado());
         dc.setSetor(view.getTxtSetor().getText().trim());
         dc.setCampus(view.getCampusSelecionado());
-        dc.setEmailSetorExtensao(view.getTxtEmailSetorExtensao().getText().trim());
         dc.setInicioVigencia(view.getTxtInicioVigencia().getText().trim());
         dc.setFimVigencia(view.getTxtFimVigencia().getText().trim());
         dc.setPropostaInovadora(view.getPropostaInovadoraSelecionada());
@@ -106,8 +105,10 @@ public class FormularioController {
         }
 
         if (sme.getModalidade() == ModalidadeAcao.EVENTO) {
-            sme.setProgramacaoEvento(view.getTxtProgramacaoEvento().getText().trim());
+            sme.setItensProgramacaoEvento(view.getPainelProgramacaoEvento().getItens());
+            sme.setProgramacaoEvento(sme.getProgramacaoEvento());
         } else {
+            sme.setItensProgramacaoEvento(new ArrayList<>());
             sme.setProgramacaoEvento("");
         }
 
@@ -205,7 +206,7 @@ public class FormularioController {
 
         // 11. Cronograma
         Cronograma cro = model.getCronograma();
-        cro.setAtividadesCronograma(view.getTxtCronograma().getText().trim());
+        cro.setItens(view.getPainelCronogramaVisual().getItens());
         cro.setObservacoes(view.getTxtObservacoes().getText().trim());
 
         return model;

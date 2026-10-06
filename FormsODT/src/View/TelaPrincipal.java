@@ -2,6 +2,7 @@ package View;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
@@ -9,6 +10,8 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.Insets;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -30,15 +33,20 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.border.TitledBorder;
+import javax.swing.text.AbstractDocument;
 
 import Controller.DocumentoController;
 import Controller.FormularioController;
+import Model.ItemCronograma;
+import Model.ItemProgramacaoEvento;
 import Model.enums.AcaoVinculadaTipo;
 import Model.enums.AreaTematica;
 import Model.enums.CampusIfes;
 import Model.enums.InovacaoResposta;
 import Model.enums.ModalidadeAcao;
 import Model.enums.TipoCargo;
+import Util.FiltroLimiteCaracteres;
+import Util.FiltroSomenteNumeros;
 
 public class TelaPrincipal extends JFrame {
 
@@ -54,7 +62,6 @@ public class TelaPrincipal extends JFrame {
     private JRadioButton rbCargoAdmin;
     private JTextField txtSetor;
     private JComboBox<CampusIfes> comboCampus;
-    private JTextField txtEmailSetorExtensao;
     private JTextField txtInicioVigencia;
     private JTextField txtFimVigencia;
     private JRadioButton rbInovacaoSim;
@@ -71,7 +78,7 @@ public class TelaPrincipal extends JFrame {
     private Map<CampusIfes, JCheckBox> checkCampiMulticampi = new HashMap<>();
 
     private JPanel panelEvento;
-    private JTextArea txtProgramacaoEvento;
+    private PainelProgramacaoEvento painelProgramacaoEvento;
 
     private JPanel panelPrestacaoServico;
     private JTextField txtPrestacaoNome;
@@ -138,7 +145,7 @@ public class TelaPrincipal extends JFrame {
     private JTextArea txtInstalacoesEquipamentos;
 
     // Seção IX: Cronograma
-    private JTextArea txtCronograma;
+    private PainelCronograma painelCronogramaVisual;
     private JTextArea txtObservacoes;
 
     // Botões
@@ -149,7 +156,9 @@ public class TelaPrincipal extends JFrame {
     public TelaPrincipal() {
         setTitle("Cadastro de Extensão - IFES (Orientação Normativa CAEX 01/2020)");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(980, 850);
+        // Tamanho lateral reduzido para caber confortavelmente em qualquer tela sem scroll lateral
+        setSize(780, 820);
+        setMinimumSize(new Dimension(740, 600));
         setLocationRelativeTo(null);
 
         inicializarComponentes();
@@ -167,62 +176,130 @@ public class TelaPrincipal extends JFrame {
     private void inicializarComponentes() {
         JPanel painelConteudoPrincipal = new JPanel();
         painelConteudoPrincipal.setLayout(new BoxLayout(painelConteudoPrincipal, BoxLayout.Y_AXIS));
-        painelConteudoPrincipal.setBorder(BorderFactory.createEmptyBorder(10, 15, 15, 15));
+        painelConteudoPrincipal.setBorder(BorderFactory.createEmptyBorder(8, 10, 12, 10));
 
         // Cabeçalho
         painelConteudoPrincipal.add(criarPainelCabecalho());
-        painelConteudoPrincipal.add(Box.createVerticalStrut(10));
+        painelConteudoPrincipal.add(Box.createVerticalStrut(8));
 
-        // 1. Dados Cadastrais
+        // 1. Dados Cadastrais (Pergunta 8 removida, 9 e 10 compactos)
         painelConteudoPrincipal.add(criarPainelDadosCadastrais());
-        painelConteudoPrincipal.add(Box.createVerticalStrut(10));
+        painelConteudoPrincipal.add(Box.createVerticalStrut(8));
 
-        // 2. Modalidade e seções condicionais
+        // 2. Modalidade e seções condicionais (Pergunta 15 em tabela)
         painelConteudoPrincipal.add(criarPainelModalidade());
-        painelConteudoPrincipal.add(Box.createVerticalStrut(10));
+        painelConteudoPrincipal.add(Box.createVerticalStrut(8));
 
-        // 3. Caracterização
+        // 3. Caracterização (Grid compacto de 2 colunas)
         painelConteudoPrincipal.add(criarPainelCaracterizacao());
-        painelConteudoPrincipal.add(Box.createVerticalStrut(10));
+        painelConteudoPrincipal.add(Box.createVerticalStrut(8));
 
-        // 4. Áreas Temáticas
+        // 4. Áreas Temáticas (ODS com limite automático de 2 opções)
         painelConteudoPrincipal.add(criarPainelAreasTematicas());
-        painelConteudoPrincipal.add(Box.createVerticalStrut(10));
+        painelConteudoPrincipal.add(Box.createVerticalStrut(8));
 
         // 5. Público Alvo e Parceiros
         painelConteudoPrincipal.add(criarPainelPublicoAlvo());
-        painelConteudoPrincipal.add(Box.createVerticalStrut(10));
+        painelConteudoPrincipal.add(Box.createVerticalStrut(8));
 
         // 6. Equipe Executora e Adjunto
         painelConteudoPrincipal.add(criarPainelEquipeExecutora());
-        painelConteudoPrincipal.add(Box.createVerticalStrut(10));
+        painelConteudoPrincipal.add(Box.createVerticalStrut(8));
 
         // 7. Público Interno
         painelConteudoPrincipal.add(criarPainelPublicoInterno());
-        painelConteudoPrincipal.add(Box.createVerticalStrut(10));
+        painelConteudoPrincipal.add(Box.createVerticalStrut(8));
 
         // 8. Detalhamento da Ação
         painelConteudoPrincipal.add(criarPainelDetalhamento());
-        painelConteudoPrincipal.add(Box.createVerticalStrut(10));
+        painelConteudoPrincipal.add(Box.createVerticalStrut(8));
 
         // 9. Fundamentação
         painelConteudoPrincipal.add(criarPainelFundamentacao());
-        painelConteudoPrincipal.add(Box.createVerticalStrut(10));
+        painelConteudoPrincipal.add(Box.createVerticalStrut(8));
 
         // 10. Cronograma
         painelConteudoPrincipal.add(criarPainelCronograma());
 
-        // JScrollPane para navegar confortavelmente por toda a tela única
+        // JScrollPane estritamente vertical: NÃO requer arrastar para o lado!
         JScrollPane scrollPane = new JScrollPane(painelConteudoPrincipal);
         scrollPane.getVerticalScrollBar().setUnitIncrement(22);
-        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 
-        // Barra inferior de botões (sempre visível no rodapé)
+        // Barra inferior de botões (sempre visível no rodapé com alto contraste)
         JPanel painelBotoesRodape = criarPainelBotoesRodape();
 
         setLayout(new BorderLayout());
         add(scrollPane, BorderLayout.CENTER);
         add(painelBotoesRodape, BorderLayout.SOUTH);
+
+        // Aplica restrições de caracteres e números estritos
+        aplicarRestricoesCampos();
+    }
+
+    private void aplicarRestricoesCampos() {
+        // Campos que só podem ter números (impede letras e caracteres em tempo real)
+        ((AbstractDocument) txtSiape.getDocument()).setDocumentFilter(new FiltroSomenteNumeros());
+        ((AbstractDocument) txtPrestacaoSiape.getDocument()).setDocumentFilter(new FiltroSomenteNumeros());
+        ((AbstractDocument) txtAdjuntoSiape.getDocument()).setDocumentFilter(new FiltroSomenteNumeros());
+        ((AbstractDocument) txtNumeroPublicoExterno.getDocument()).setDocumentFilter(new FiltroSomenteNumeros());
+        ((AbstractDocument) txtNumeroPublicoInterno.getDocument()).setDocumentFilter(new FiltroSomenteNumeros());
+
+        ((AbstractDocument) txtEstudantesFic.getDocument()).setDocumentFilter(new FiltroSomenteNumeros());
+        ((AbstractDocument) txtEstudantesTecnico.getDocument()).setDocumentFilter(new FiltroSomenteNumeros());
+        ((AbstractDocument) txtEstudantesGraduacao.getDocument()).setDocumentFilter(new FiltroSomenteNumeros());
+        ((AbstractDocument) txtEstudantesPosGraduacao.getDocument()).setDocumentFilter(new FiltroSomenteNumeros());
+        ((AbstractDocument) txtDocentes.getDocument()).setDocumentFilter(new FiltroSomenteNumeros());
+        ((AbstractDocument) txtTae.getDocument()).setDocumentFilter(new FiltroSomenteNumeros());
+        ((AbstractDocument) txtColaboradoresExternos.getDocument()).setDocumentFilter(new FiltroSomenteNumeros());
+
+        // Campos com limite de caracteres
+        ((AbstractDocument) txtTituloAcao.getDocument()).setDocumentFilter(new FiltroLimiteCaracteres(250));
+        ((AbstractDocument) txtPalavrasChave.getDocument()).setDocumentFilter(new FiltroLimiteCaracteres(100));
+        ((AbstractDocument) txtResumo.getDocument()).setDocumentFilter(new FiltroLimiteCaracteres(3000));
+
+        // Validação visual imediata ao sair do campo (FocusLost)
+        txtSiape.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusLost(FocusEvent e) {
+                String val = txtSiape.getText().trim();
+                if (!val.isEmpty() && val.length() < 7) {
+                    txtSiape.setBackground(new Color(255, 230, 230));
+                    txtSiape.setToolTipText("Atenção: O Siape deve conter pelo menos 7 dígitos.");
+                } else {
+                    txtSiape.setBackground(Color.WHITE);
+                    txtSiape.setToolTipText(null);
+                }
+            }
+        });
+
+        txtEmail.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusLost(FocusEvent e) {
+                String val = txtEmail.getText().trim();
+                if (!val.isEmpty() && !val.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")) {
+                    txtEmail.setBackground(new Color(255, 230, 230));
+                    txtEmail.setToolTipText("Atenção: Insira um endereço de e-mail válido (ex: coordenador@ifes.edu.br)");
+                } else {
+                    txtEmail.setBackground(Color.WHITE);
+                    txtEmail.setToolTipText(null);
+                }
+            }
+        });
+
+        txtNumeroPublicoExterno.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusLost(FocusEvent e) {
+                int val = getNumeroPublicoExterno();
+                if (val <= 0) {
+                    txtNumeroPublicoExterno.setBackground(new Color(255, 230, 230));
+                    txtNumeroPublicoExterno.setToolTipText("O público externo deve ser um número maior que 0.");
+                } else {
+                    txtNumeroPublicoExterno.setBackground(Color.WHITE);
+                    txtNumeroPublicoExterno.setToolTipText(null);
+                }
+            }
+        });
     }
 
     private JPanel criarPainelCabecalho() {
@@ -231,25 +308,25 @@ public class TelaPrincipal extends JFrame {
         p.setBackground(new Color(245, 248, 252));
         p.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(180, 200, 230), 1),
-            BorderFactory.createEmptyBorder(12, 15, 12, 15)
+            BorderFactory.createEmptyBorder(10, 12, 10, 12)
         ));
 
         JLabel lblInst = new JLabel("INSTITUTO FEDERAL DO ESPÍRITO SANTO - IFES | PRÓ-REITORIA DE EXTENSÃO");
         lblInst.setFont(new Font("Segoe UI", Font.BOLD, 12));
         lblInst.setForeground(new Color(0, 70, 130));
 
-        JLabel lblTitulo = new JLabel("CADASTRO DE PROGRAMA, PROJETO, EVENTO E PRESTAÇÃO DE SERVIÇOS DE EXTENSÃO");
-        lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 15));
+        JLabel lblTitulo = new JLabel("CADASTRO DE EXTENSÃO (ORIENTAÇÃO NORMATIVA CAEX 01/2020)");
+        lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 14));
         lblTitulo.setForeground(new Color(20, 40, 70));
 
-        JLabel lblSub = new JLabel("Telas e opções unificadas. Conforme as decisões forem feitas, as opções não aplicáveis ficarão cinzas automaticamente.");
+        JLabel lblSub = new JLabel("Todas as opções integradas. Conforme as decisões forem tomadas, os campos não aplicáveis ficam cinzas.");
         lblSub.setFont(new Font("Segoe UI", Font.ITALIC, 11));
-        lblSub.setForeground(new Color(80, 80, 80));
+        lblSub.setForeground(new Color(90, 90, 90));
 
         p.add(lblInst);
-        p.add(Box.createVerticalStrut(3));
+        p.add(Box.createVerticalStrut(2));
         p.add(lblTitulo);
-        p.add(Box.createVerticalStrut(4));
+        p.add(Box.createVerticalStrut(3));
         p.add(lblSub);
 
         return p;
@@ -265,11 +342,12 @@ public class TelaPrincipal extends JFrame {
         p.add(new JLabel("1. Título da ação: *"), gbc);
         gbc.gridx = 1; gbc.weightx = 1.0; gbc.gridwidth = 3;
         txtTituloAcao = new JTextField();
+        txtTituloAcao.setToolTipText("Máximo de 250 caracteres");
         p.add(txtTituloAcao, gbc);
 
         // 2. Nome coordenador
         gbc.gridx = 0; gbc.gridy = 1; gbc.gridwidth = 1; gbc.weightx = 0;
-        p.add(new JLabel("2. Nome completo do coordenador: *"), gbc);
+        p.add(new JLabel("2. Nome coordenador: *"), gbc);
         gbc.gridx = 1; gbc.weightx = 0.5;
         txtNomeCoordenador = new JTextField();
         p.add(txtNomeCoordenador, gbc);
@@ -279,11 +357,12 @@ public class TelaPrincipal extends JFrame {
         p.add(new JLabel("3. Siape: *"), gbc);
         gbc.gridx = 3; gbc.weightx = 0.5;
         txtSiape = new JTextField();
+        txtSiape.setToolTipText("Pelo menos 7 dígitos (somente números)");
         p.add(txtSiape, gbc);
 
         // 4. Email
         gbc.gridx = 0; gbc.gridy = 2; gbc.weightx = 0;
-        p.add(new JLabel("4. E-mail do coordenador: *"), gbc);
+        p.add(new JLabel("4. Seu E-mail: *"), gbc);
         gbc.gridx = 1; gbc.weightx = 0.5;
         txtEmail = new JTextField();
         p.add(txtEmail, gbc);
@@ -292,9 +371,9 @@ public class TelaPrincipal extends JFrame {
         gbc.gridx = 2; gbc.weightx = 0;
         p.add(new JLabel("5. Cargo: *"), gbc);
         gbc.gridx = 3; gbc.weightx = 0.5;
-        JPanel pCargo = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
-        rbCargoDocente = new JRadioButton("Servidor docente", true);
-        rbCargoAdmin = new JRadioButton("Servidor administrativo");
+        JPanel pCargo = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+        rbCargoDocente = new JRadioButton("Docente", true);
+        rbCargoAdmin = new JRadioButton("Administrativo");
         ButtonGroup bgCargo = new ButtonGroup();
         bgCargo.add(rbCargoDocente);
         bgCargo.add(rbCargoAdmin);
@@ -317,29 +396,36 @@ public class TelaPrincipal extends JFrame {
         comboCampus.setSelectedItem(CampusIfes.VITORIA);
         p.add(comboCampus, gbc);
 
-        // 8. Email Setor Extensão
-        gbc.gridx = 0; gbc.gridy = 4; gbc.weightx = 0;
-        p.add(new JLabel("8. E-mail do setor de extensão do campus: *"), gbc);
-        gbc.gridx = 1; gbc.weightx = 1.0; gbc.gridwidth = 3;
-        txtEmailSetorExtensao = new JTextField();
-        p.add(txtEmailSetorExtensao, gbc);
-
-        // 9 e 10. Vigência
-        gbc.gridx = 0; gbc.gridy = 5; gbc.gridwidth = 1; gbc.weightx = 0;
-        p.add(new JLabel("9. Início do período de vigência: *"), gbc);
+        // 9 e 10. Vigência (Campos compactos, Pergunta 8 removida)
+        gbc.gridx = 0; gbc.gridy = 4; gbc.gridwidth = 1; gbc.weightx = 0;
+        p.add(new JLabel("9. Início vigência: *"), gbc);
         gbc.gridx = 1; gbc.weightx = 0.5;
-        txtInicioVigencia = new JTextField();
-        p.add(txtInicioVigencia, gbc);
+        JPanel pVigenciaIni = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+        txtInicioVigencia = new JTextField(10);
+        txtInicioVigencia.setToolTipText("Formato: DD/MM/AAAA");
+        pVigenciaIni.add(txtInicioVigencia);
+        JLabel lblDica1 = new JLabel("(DD/MM/AAAA)");
+        lblDica1.setFont(new Font("Segoe UI", Font.PLAIN, 10));
+        lblDica1.setForeground(Color.GRAY);
+        pVigenciaIni.add(lblDica1);
+        p.add(pVigenciaIni, gbc);
 
         gbc.gridx = 2; gbc.weightx = 0;
-        p.add(new JLabel("10. Fim do período de vigência: *"), gbc);
+        p.add(new JLabel("10. Fim vigência: *"), gbc);
         gbc.gridx = 3; gbc.weightx = 0.5;
-        txtFimVigencia = new JTextField();
-        p.add(txtFimVigencia, gbc);
+        JPanel pVigenciaFim = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+        txtFimVigencia = new JTextField(10);
+        txtFimVigencia.setToolTipText("Formato: DD/MM/AAAA");
+        pVigenciaFim.add(txtFimVigencia);
+        JLabel lblDica2 = new JLabel("(DD/MM/AAAA)");
+        lblDica2.setFont(new Font("Segoe UI", Font.PLAIN, 10));
+        lblDica2.setForeground(Color.GRAY);
+        pVigenciaFim.add(lblDica2);
+        p.add(pVigenciaFim, gbc);
 
         // 11. Proposta inovadora
-        gbc.gridx = 0; gbc.gridy = 6; gbc.weightx = 0;
-        p.add(new JLabel("11. Desenvolve método/tecnologia inovador?: *"), gbc);
+        gbc.gridx = 0; gbc.gridy = 5; gbc.weightx = 0;
+        p.add(new JLabel("11. Método/negócio inovador?: *"), gbc);
         gbc.gridx = 1; gbc.weightx = 1.0; gbc.gridwidth = 3;
         JPanel pInov = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         rbInovacaoSim = new JRadioButton("Sim");
@@ -362,19 +448,19 @@ public class TelaPrincipal extends JFrame {
         container.setLayout(new BoxLayout(container, BoxLayout.Y_AXIS));
 
         // Linha seletora da Modalidade
-        JPanel pEscolha = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
+        JPanel pEscolha = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 4));
         JLabel lblMod = new JLabel("12. Modalidade da Ação: * ");
         lblMod.setFont(new Font("Segoe UI", Font.BOLD, 12));
         comboModalidade = new JComboBox<>(ModalidadeAcao.values());
-        comboModalidade.setPreferredSize(new Dimension(280, 26));
+        comboModalidade.setPreferredSize(new Dimension(260, 26));
         pEscolha.add(lblMod);
         pEscolha.add(comboModalidade);
         container.add(pEscolha);
 
         // A. PROGRAMA EM REDE
         panelProgramaRede = criarPainelComBorda("SEÇÃO ESPECÍFICA: PROGRAMA EM REDE");
-        panelProgramaRede.setLayout(new FlowLayout(FlowLayout.LEFT, 10, 5));
-        JLabel lblRede = new JLabel("14. A proposição é constituída no âmbito da PROEX para adesão de qualquer unidade? Está certo que é novo Programa em Rede? * ");
+        panelProgramaRede.setLayout(new FlowLayout(FlowLayout.LEFT, 8, 4));
+        JLabel lblRede = new JLabel("14. É nova proposição de Programa em Rede vinculado à PROEX? * ");
         rbRedeSim = new JRadioButton("Sim");
         rbRedeNao = new JRadioButton("Não", true);
         ButtonGroup bgRede = new ButtonGroup();
@@ -385,13 +471,13 @@ public class TelaPrincipal extends JFrame {
         panelProgramaRede.add(rbRedeNao);
         container.add(panelProgramaRede);
 
-        // B. PROGRAMA MULTICAMPI
+        // B. PROGRAMA MULTICAMPI (3 colunas para caber perfeitamente na largura)
         panelProgramaMulticampi = criarPainelComBorda("SEÇÃO ESPECÍFICA: PROGRAMA MULTICAMPI");
-        panelProgramaMulticampi.setLayout(new BorderLayout(5, 5));
+        panelProgramaMulticampi.setLayout(new BorderLayout(4, 4));
         JLabel lblMulti = new JLabel("13. Unidades onde a ação está sendo executada (Marque todas as participantes): *");
         panelProgramaMulticampi.add(lblMulti, BorderLayout.NORTH);
 
-        JPanel pCampiGrid = new JPanel(new GridLayout(0, 4, 8, 3));
+        JPanel pCampiGrid = new JPanel(new GridLayout(0, 3, 6, 2));
         for (CampusIfes c : CampusIfes.values()) {
             JCheckBox chk = new JCheckBox(c.getNome());
             checkCampiMulticampi.put(c, chk);
@@ -400,15 +486,16 @@ public class TelaPrincipal extends JFrame {
         panelProgramaMulticampi.add(pCampiGrid, BorderLayout.CENTER);
         container.add(panelProgramaMulticampi);
 
-        // C. EVENTO
+        // C. EVENTO (Tabela para número grande de linhas)
         panelEvento = criarPainelComBorda("SEÇÃO ESPECÍFICA: EVENTO");
-        panelEvento.setLayout(new BorderLayout(5, 5));
-        JLabel lblEv = new JLabel("15. Programação do evento (atividades, local, data, hora e responsáveis): *");
-        txtProgramacaoEvento = new JTextArea(4, 30);
-        txtProgramacaoEvento.setLineWrap(true);
-        txtProgramacaoEvento.setWrapStyleWord(true);
+        panelEvento.setLayout(new BorderLayout(4, 4));
+        JLabel lblEv = new JLabel("15. Programação do evento (atividades, data, horário, local e responsáveis): *");
+        lblEv.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        lblEv.setForeground(new Color(20, 60, 120));
         panelEvento.add(lblEv, BorderLayout.NORTH);
-        panelEvento.add(new JScrollPane(txtProgramacaoEvento), BorderLayout.CENTER);
+
+        painelProgramacaoEvento = new PainelProgramacaoEvento();
+        panelEvento.add(painelProgramacaoEvento, BorderLayout.CENTER);
         container.add(panelEvento);
 
         // D. PRESTAÇÃO DE SERVIÇO
@@ -417,13 +504,13 @@ public class TelaPrincipal extends JFrame {
         GridBagConstraints gbc = criarGbcBase();
 
         gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0;
-        panelPrestacaoServico.add(new JLabel("16. Nome responsável técnico: *"), gbc);
+        panelPrestacaoServico.add(new JLabel("16. Responsável técnico: *"), gbc);
         gbc.gridx = 1; gbc.weightx = 0.5;
         txtPrestacaoNome = new JTextField();
         panelPrestacaoServico.add(txtPrestacaoNome, gbc);
 
         gbc.gridx = 2; gbc.weightx = 0;
-        panelPrestacaoServico.add(new JLabel("17. Registro técnico (CREA/CRM/etc):"), gbc);
+        panelPrestacaoServico.add(new JLabel("17. Registro (CREA/CRM/etc):"), gbc);
         gbc.gridx = 3; gbc.weightx = 0.5;
         txtPrestacaoRegistro = new JTextField();
         panelPrestacaoServico.add(txtPrestacaoRegistro, gbc);
@@ -441,9 +528,9 @@ public class TelaPrincipal extends JFrame {
         panelPrestacaoServico.add(txtPrestacaoEmail, gbc);
 
         gbc.gridx = 0; gbc.gridy = 2; gbc.weightx = 0;
-        panelPrestacaoServico.add(new JLabel("20. Descrição técnica do serviço: *"), gbc);
+        panelPrestacaoServico.add(new JLabel("20. Descrição técnica: *"), gbc);
         gbc.gridx = 1; gbc.weightx = 1.0; gbc.gridwidth = 3;
-        txtPrestacaoDescricao = new JTextArea(3, 30);
+        txtPrestacaoDescricao = new JTextArea(2, 30);
         txtPrestacaoDescricao.setLineWrap(true);
         txtPrestacaoDescricao.setWrapStyleWord(true);
         panelPrestacaoServico.add(new JScrollPane(txtPrestacaoDescricao), gbc);
@@ -458,22 +545,22 @@ public class TelaPrincipal extends JFrame {
         p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS));
 
         // 21. Curricular
-        JPanel pCurric = new JPanel(new BorderLayout(5, 5));
+        JPanel pCurric = new JPanel(new BorderLayout(4, 4));
         chkNaoPossuiCurricular = new JCheckBox("Não possui atividades curriculares em curso regular.");
-        JLabel lblCurric = new JLabel("21. Cursos regulares com atividades curriculares de extensão integradas:");
+        JLabel lblCurric = new JLabel("21. Cursos regulares com atividades curriculares integradas:");
         txtCursosCurriculares = new JTextField("Ex: Análise e Desenvolvimento de Sistemas, Engenharia Elétrica");
         pCurric.add(chkNaoPossuiCurricular, BorderLayout.NORTH);
-        JPanel pCurricSub = new JPanel(new BorderLayout(5, 2));
+        JPanel pCurricSub = new JPanel(new BorderLayout(4, 2));
         pCurricSub.add(lblCurric, BorderLayout.NORTH);
         pCurricSub.add(txtCursosCurriculares, BorderLayout.CENTER);
         pCurric.add(pCurricSub, BorderLayout.CENTER);
         p.add(pCurric);
-        p.add(Box.createVerticalStrut(8));
+        p.add(Box.createVerticalStrut(6));
 
-        // 22. Fomento
-        JPanel pFom = new JPanel(new BorderLayout(5, 5));
+        // 22. Fomento (2 colunas para nunca quebrar ou expandir a tela para o lado)
+        JPanel pFom = new JPanel(new BorderLayout(4, 4));
         pFom.add(new JLabel("22. Assinale o fomento da ação: *"), BorderLayout.NORTH);
-        JPanel pFomGrid = new JPanel(new GridLayout(0, 4, 6, 2));
+        JPanel pFomGrid = new JPanel(new GridLayout(0, 2, 8, 2));
         String[] opcoesFomento = {
             "Não possui", "Ifes - PAEx", "Ifes - PAIn", "Ifes - outro", 
             "Fapes", "CNPq", "Finep", "Petrobras", 
@@ -484,34 +571,34 @@ public class TelaPrincipal extends JFrame {
             chkFomentos.add(chk);
             pFomGrid.add(chk);
         }
-        JPanel pFomOutro = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
-        pFomOutro.add(new JLabel("Outra fonte de fomento:"));
-        txtFomentoOutro = new JTextField(20);
+        JPanel pFomOutro = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+        pFomOutro.add(new JLabel("Outra:"));
+        txtFomentoOutro = new JTextField(15);
         pFomOutro.add(txtFomentoOutro);
         pFomGrid.add(pFomOutro);
 
         pFom.add(pFomGrid, BorderLayout.CENTER);
         p.add(pFom);
-        p.add(Box.createVerticalStrut(8));
+        p.add(Box.createVerticalStrut(6));
 
         // 23. Ação mais abrangente
-        JPanel pAbr = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 3));
-        pAbr.add(new JLabel("23. A qual ação institucional mais abrangente a ação está vinculada? *"));
+        JPanel pAbr = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 2));
+        pAbr.add(new JLabel("23. Ação institucional mais abrangente: *"));
         comboAcaoVinculada = new JComboBox<>(AcaoVinculadaTipo.values());
         comboAcaoVinculada.setSelectedItem(AcaoVinculadaTipo.NAO_VINCULADA);
         pAbr.add(comboAcaoVinculada);
 
-        pAbr.add(new JLabel("Se outra, descreva:"));
-        txtAcaoVinculadaOutra = new JTextField(15);
+        pAbr.add(new JLabel("Se outra:"));
+        txtAcaoVinculadaOutra = new JTextField(12);
         txtAcaoVinculadaOutra.setEnabled(false);
         pAbr.add(txtAcaoVinculadaOutra);
         p.add(pAbr);
 
         // Painel condicional da Ação de Extensão Vinculada
         panelAcaoVinculada = criarPainelComBorda("AÇÃO DE EXTENSÃO VINCULADA");
-        panelAcaoVinculada.setLayout(new FlowLayout(FlowLayout.LEFT, 10, 5));
-        panelAcaoVinculada.add(new JLabel("24. Número de cadastro da ação de extensão (Processo SIPAC): *"));
-        txtNumeroProcessoSipac = new JTextField(25);
+        panelAcaoVinculada.setLayout(new FlowLayout(FlowLayout.LEFT, 8, 4));
+        panelAcaoVinculada.add(new JLabel("24. Processo SIPAC da ação vinculada: *"));
+        txtNumeroProcessoSipac = new JTextField(22);
         panelAcaoVinculada.add(txtNumeroProcessoSipac);
         p.add(panelAcaoVinculada);
 
@@ -522,12 +609,12 @@ public class TelaPrincipal extends JFrame {
         JPanel p = criarPainelComBorda("ÁREAS TEMÁTICAS E ODS (Perguntas 25 a 27)");
         p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS));
 
-        JPanel pCombos = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 5));
-        pCombos.add(new JLabel("25. Área temática principal: *"));
+        JPanel pCombos = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 4));
+        pCombos.add(new JLabel("25. Área principal: *"));
         comboAreaPrincipal = new JComboBox<>(AreaTematica.values());
         pCombos.add(comboAreaPrincipal);
 
-        pCombos.add(new JLabel("26. Área temática secundária:"));
+        pCombos.add(new JLabel("26. Área secundária:"));
         comboAreaSecundaria = new JComboBox<>();
         comboAreaSecundaria.addItem("Nenhuma");
         for (AreaTematica at : AreaTematica.values()) {
@@ -536,12 +623,13 @@ public class TelaPrincipal extends JFrame {
         pCombos.add(comboAreaSecundaria);
         p.add(pCombos);
 
-        p.add(Box.createVerticalStrut(5));
-        JLabel lblOds = new JLabel("27. Objetivos do Desenvolvimento Sustentável (ODS) - Selecione até 2 opções: *");
+        p.add(Box.createVerticalStrut(4));
+        JLabel lblOds = new JLabel("27. Objetivos do Desenvolvimento Sustentável (ODS) - Selecione no máximo 2 opções: *");
         lblOds.setFont(new Font("Segoe UI", Font.BOLD, 11));
         p.add(lblOds);
 
-        JPanel pOdsGrid = new JPanel(new GridLayout(0, 3, 6, 2));
+        // 2 colunas para ajuste lateral perfeito
+        JPanel pOdsGrid = new JPanel(new GridLayout(0, 2, 6, 2));
         String[] listaOds = {
             "1. Erradicação da Pobreza", "2. Fome Zero e Agric. Sustentável", "3. Saúde e Bem-Estar",
             "4. Educação de Qualidade", "5. Igualdade de Gênero", "6. Água Potável e Saneamento",
@@ -552,6 +640,15 @@ public class TelaPrincipal extends JFrame {
         };
         for (String ods : listaOds) {
             JCheckBox chk = new JCheckBox(ods);
+            chk.addActionListener(e -> {
+                if (chk.isSelected() && getOdsSelecionados().size() > 2) {
+                    chk.setSelected(false);
+                    JOptionPane.showMessageDialog(this, 
+                        "A Orientação Normativa CAEX 01/2020 permite a seleção de no máximo 2 ODS.", 
+                        "Limite de ODS Atingido", 
+                        JOptionPane.WARNING_MESSAGE);
+                }
+            });
             checkOds.add(chk);
             pOdsGrid.add(chk);
         }
@@ -574,13 +671,14 @@ public class TelaPrincipal extends JFrame {
         p.add(new JScrollPane(txtCaracterizacaoPublicoAlvo), gbc);
 
         gbc.gridx = 0; gbc.gridy = 1; gbc.weightx = 0;
-        p.add(new JLabel("29. Total estimado de pessoas público EXTERNO: *"), gbc);
+        p.add(new JLabel("29. Total estimado público EXTERNO: *"), gbc);
         gbc.gridx = 1; gbc.weightx = 1.0;
         txtNumeroPublicoExterno = new JTextField("0");
+        txtNumeroPublicoExterno.setToolTipText("Somente números maiores que 0");
         p.add(txtNumeroPublicoExterno, gbc);
 
         gbc.gridx = 0; gbc.gridy = 2; gbc.weightx = 0;
-        p.add(new JLabel("30. Organizações parceiras e descrição da participação:"), gbc);
+        p.add(new JLabel("30. Organizações parceiras e participação:"), gbc);
         gbc.gridx = 1; gbc.weightx = 1.0;
         txtOrganizacoesParceiras = new JTextArea(2, 30);
         txtOrganizacoesParceiras.setLineWrap(true);
@@ -600,8 +698,8 @@ public class TelaPrincipal extends JFrame {
         JPanel container = criarPainelComBorda("EQUIPE EXECUTORA E COORDENAÇÃO ADJUNTA (Perguntas 32 a 45)");
         container.setLayout(new BoxLayout(container, BoxLayout.Y_AXIS));
 
-        // Linha com quantidades numéricas da equipe
-        JPanel pQuant = new JPanel(new GridLayout(2, 4, 8, 4));
+        // Quantitativos numéricos da equipe
+        JPanel pQuant = new JPanel(new GridLayout(2, 4, 6, 3));
         txtEstudantesFic = new JTextField("0");
         txtEstudantesTecnico = new JTextField("0");
         txtEstudantesGraduacao = new JTextField("0");
@@ -619,10 +717,10 @@ public class TelaPrincipal extends JFrame {
         pQuant.add(criarItemComLabel("38. Colaboradores Externos:", txtColaboradoresExternos));
         container.add(pQuant);
 
-        container.add(Box.createVerticalStrut(8));
+        container.add(Box.createVerticalStrut(6));
 
-        // Pergunta 39: Há coordenador adjunto? (Decisão 3)
-        JPanel pAdjDecisao = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 4));
+        // Pergunta 39: Há coordenador adjunto?
+        JPanel pAdjDecisao = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 3));
         JLabel lblAdj = new JLabel("39. Há coordenador adjunto? * ");
         lblAdj.setFont(new Font("Segoe UI", Font.BOLD, 12));
         rbAdjuntoSim = new JRadioButton("Sim");
@@ -641,7 +739,7 @@ public class TelaPrincipal extends JFrame {
         GridBagConstraints gbc = criarGbcBase();
 
         gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0;
-        panelCoordenacaoAdjunta.add(new JLabel("40. Nome coordenador adjunto: *"), gbc);
+        panelCoordenacaoAdjunta.add(new JLabel("40. Nome adjunto: *"), gbc);
         gbc.gridx = 1; gbc.weightx = 0.5;
         txtAdjuntoNome = new JTextField();
         panelCoordenacaoAdjunta.add(txtAdjuntoNome, gbc);
@@ -661,7 +759,7 @@ public class TelaPrincipal extends JFrame {
         gbc.gridx = 2; gbc.weightx = 0;
         panelCoordenacaoAdjunta.add(new JLabel("43. Cargo: *"), gbc);
         gbc.gridx = 3; gbc.weightx = 0.5;
-        JPanel pAdjCargo = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+        JPanel pAdjCargo = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
         rbAdjuntoCargoDocente = new JRadioButton("Docente", true);
         rbAdjuntoCargoAdmin = new JRadioButton("Administrativo");
         ButtonGroup bgAdjCargo = new ButtonGroup();
@@ -705,6 +803,7 @@ public class TelaPrincipal extends JFrame {
         p.add(new JLabel("47. Total estimado público INTERNO: *"), gbc);
         gbc.gridx = 1; gbc.weightx = 1.0;
         txtNumeroPublicoInterno = new JTextField("0");
+        txtNumeroPublicoInterno.setToolTipText("Somente números");
         p.add(txtNumeroPublicoInterno, gbc);
 
         return p;
@@ -727,6 +826,7 @@ public class TelaPrincipal extends JFrame {
         p.add(new JLabel("49. Palavras-chave: *"), gbc);
         gbc.gridx = 1; gbc.weightx = 1.0;
         txtPalavrasChave = new JTextField();
+        txtPalavrasChave.setToolTipText("Máximo de 100 caracteres");
         p.add(txtPalavrasChave, gbc);
 
         gbc.gridx = 0; gbc.gridy = 2; gbc.weightx = 0;
@@ -762,7 +862,7 @@ public class TelaPrincipal extends JFrame {
         p.add(new JScrollPane(txtInfluenciaGrupos), gbc);
 
         gbc.gridx = 0; gbc.gridy = 1; gbc.weightx = 0;
-        p.add(new JLabel("53. Mudanças a serem produzidas no público: *"), gbc);
+        p.add(new JLabel("53. Mudanças produzidas no público: *"), gbc);
         gbc.gridx = 1; gbc.weightx = 1.0;
         txtMudancasPublico = new JTextArea(2, 30);
         txtMudancasPublico.setLineWrap(true);
@@ -778,7 +878,7 @@ public class TelaPrincipal extends JFrame {
         p.add(new JScrollPane(txtRelacaoEnsinoPesquisa), gbc);
 
         gbc.gridx = 0; gbc.gridy = 3; gbc.weightx = 0;
-        p.add(new JLabel("55. Participação de estudantes como protagonistas: *"), gbc);
+        p.add(new JLabel("55. Protagonismo de estudantes: *"), gbc);
         gbc.gridx = 1; gbc.weightx = 1.0;
         txtProtagonismoEstudantes = new JTextArea(2, 30);
         txtProtagonismoEstudantes.setLineWrap(true);
@@ -786,7 +886,7 @@ public class TelaPrincipal extends JFrame {
         p.add(new JScrollPane(txtProtagonismoEstudantes), gbc);
 
         gbc.gridx = 0; gbc.gridy = 4; gbc.weightx = 0;
-        p.add(new JLabel("56. Instalações, equipamentos e materiais:"), gbc);
+        p.add(new JLabel("56. Instalações e equipamentos:"), gbc);
         gbc.gridx = 1; gbc.weightx = 1.0;
         txtInstalacoesEquipamentos = new JTextArea(2, 30);
         txtInstalacoesEquipamentos.setLineWrap(true);
@@ -798,44 +898,54 @@ public class TelaPrincipal extends JFrame {
 
     private JPanel criarPainelCronograma() {
         JPanel p = criarPainelComBorda("CRONOGRAMA E OBSERVAÇÕES (Perguntas 57 e 58)");
-        p.setLayout(new GridBagLayout());
-        GridBagConstraints gbc = criarGbcBase();
+        p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS));
 
-        gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0;
-        p.add(new JLabel("57. Atividades e Cronograma de execução: *"), gbc);
-        gbc.gridx = 1; gbc.weightx = 1.0;
-        txtCronograma = new JTextArea(3, 30);
-        txtCronograma.setLineWrap(true);
-        txtCronograma.setWrapStyleWord(true);
-        p.add(new JScrollPane(txtCronograma), gbc);
+        JLabel lblCron = new JLabel("57. Atividades e Cronograma de Execução (Calendário / Gráfico de Gantt): *");
+        lblCron.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        lblCron.setForeground(new Color(20, 60, 120));
+        p.add(lblCron);
+        p.add(Box.createVerticalStrut(4));
 
-        gbc.gridx = 0; gbc.gridy = 1; gbc.weightx = 0;
-        p.add(new JLabel("58. Observações complementares:"), gbc);
-        gbc.gridx = 1; gbc.weightx = 1.0;
+        painelCronogramaVisual = new PainelCronograma();
+        p.add(painelCronogramaVisual);
+        p.add(Box.createVerticalStrut(8));
+
+        JPanel pObs = new JPanel(new BorderLayout(4, 3));
+        JLabel lblObs = new JLabel("58. Observações complementares:");
+        lblObs.setFont(new Font("Segoe UI", Font.BOLD, 12));
         txtObservacoes = new JTextArea(2, 30);
         txtObservacoes.setLineWrap(true);
         txtObservacoes.setWrapStyleWord(true);
-        p.add(new JScrollPane(txtObservacoes), gbc);
+        pObs.add(lblObs, BorderLayout.NORTH);
+        pObs.add(new JScrollPane(txtObservacoes), BorderLayout.CENTER);
+        p.add(pObs);
 
         return p;
     }
 
     private JPanel criarPainelBotoesRodape() {
-        JPanel p = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 12));
-        p.setBackground(new Color(238, 242, 248));
-        p.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(200, 210, 225)));
+        JPanel p = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 10));
+        p.setBackground(new Color(236, 241, 248));
+        p.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(195, 208, 225)));
 
         btnPreencherExemplo = new JButton("Preencher Dados de Exemplo");
-        btnPreencherExemplo.setToolTipText("Preenche rapidamente os campos com dados de teste válidos.");
+        btnPreencherExemplo.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        btnPreencherExemplo.setToolTipText("Preenche todos os campos com dados de teste válidos.");
 
         btnLimpar = new JButton("Limpar Formulário");
+        btnLimpar.setFont(new Font("Segoe UI", Font.PLAIN, 12));
 
-        btnGerarOdt = new JButton("GERAR ARQUIVO ODT");
+        // Botão com excelente contraste: texto escuro nítido sobre fundo azul celeste claro delimitado
+        btnGerarOdt = new JButton("💾  GERAR ARQUIVO ODT (.odt)");
         btnGerarOdt.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        btnGerarOdt.setBackground(new Color(0, 102, 204));
-        btnGerarOdt.setForeground(Color.WHITE);
-        btnGerarOdt.setOpaque(true);
-        btnGerarOdt.setPreferredSize(new Dimension(200, 34));
+        btnGerarOdt.setForeground(new Color(10, 40, 80)); // Letra escura de altíssimo contraste
+        btnGerarOdt.setBackground(new Color(185, 220, 255)); // Fundo azul celeste claro bem nítido
+        btnGerarOdt.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(0, 80, 160), 2, true),
+            BorderFactory.createEmptyBorder(6, 16, 6, 16)
+        ));
+        btnGerarOdt.setFocusPainted(false);
+        btnGerarOdt.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
         p.add(btnPreencherExemplo);
         p.add(btnLimpar);
@@ -880,20 +990,20 @@ public class TelaPrincipal extends JFrame {
             new Font("Segoe UI", Font.BOLD, 12),
             new Color(20, 60, 120)
         );
-        p.setBorder(BorderFactory.createCompoundBorder(border, BorderFactory.createEmptyBorder(6, 10, 8, 10)));
+        p.setBorder(BorderFactory.createCompoundBorder(border, BorderFactory.createEmptyBorder(4, 8, 6, 8)));
         return p;
     }
 
     private GridBagConstraints criarGbcBase() {
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(4, 4, 4, 4);
+        gbc.insets = new Insets(3, 3, 3, 3);
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.anchor = GridBagConstraints.WEST;
         return gbc;
     }
 
     private JPanel criarItemComLabel(String labelText, JTextField tf) {
-        JPanel p = new JPanel(new BorderLayout(4, 2));
+        JPanel p = new JPanel(new BorderLayout(3, 1));
         p.add(new JLabel(labelText), BorderLayout.NORTH);
         p.add(tf, BorderLayout.CENTER);
         return p;
@@ -1004,6 +1114,7 @@ public class TelaPrincipal extends JFrame {
     public JPanel getPanelProgramaRede() { return panelProgramaRede; }
     public JPanel getPanelProgramaMulticampi() { return panelProgramaMulticampi; }
     public JPanel getPanelEvento() { return panelEvento; }
+    public PainelProgramacaoEvento getPainelProgramacaoEvento() { return painelProgramacaoEvento; }
     public JPanel getPanelPrestacaoServico() { return panelPrestacaoServico; }
     public JPanel getPanelAcaoVinculada() { return panelAcaoVinculada; }
     public JPanel getPanelCoordenacaoAdjunta() { return panelCoordenacaoAdjunta; }
@@ -1013,11 +1124,9 @@ public class TelaPrincipal extends JFrame {
     public JTextField getTxtSiape() { return txtSiape; }
     public JTextField getTxtEmail() { return txtEmail; }
     public JTextField getTxtSetor() { return txtSetor; }
-    public JTextField getTxtEmailSetorExtensao() { return txtEmailSetorExtensao; }
     public JTextField getTxtInicioVigencia() { return txtInicioVigencia; }
     public JTextField getTxtFimVigencia() { return txtFimVigencia; }
 
-    public JTextArea getTxtProgramacaoEvento() { return txtProgramacaoEvento; }
     public JTextField getTxtPrestacaoNome() { return txtPrestacaoNome; }
     public JTextField getTxtPrestacaoRegistro() { return txtPrestacaoRegistro; }
     public JTextField getTxtPrestacaoSiape() { return txtPrestacaoSiape; }
@@ -1048,6 +1157,7 @@ public class TelaPrincipal extends JFrame {
     public JTextField getTxtAdjuntoSetor() { return txtAdjuntoSetor; }
 
     public JTextArea getTxtCaracterizacaoPublicoInterno() { return txtCaracterizacaoPublicoInterno; }
+    public JTextField getTxtNumeroPublicoInternoField() { return txtNumeroPublicoInterno; }
     public JTextArea getTxtResumo() { return txtResumo; }
     public JTextField getTxtPalavrasChave() { return txtPalavrasChave; }
     public JTextArea getTxtObjetivoGeral() { return txtObjetivoGeral; }
@@ -1059,7 +1169,7 @@ public class TelaPrincipal extends JFrame {
     public JTextArea getTxtProtagonismoEstudantes() { return txtProtagonismoEstudantes; }
     public JTextArea getTxtInstalacoesEquipamentos() { return txtInstalacoesEquipamentos; }
 
-    public JTextArea getTxtCronograma() { return txtCronograma; }
+    public PainelCronograma getPainelCronogramaVisual() { return painelCronogramaVisual; }
     public JTextArea getTxtObservacoes() { return txtObservacoes; }
 
     public void preencherExemplo() {
@@ -1070,12 +1180,18 @@ public class TelaPrincipal extends JFrame {
         rbCargoDocente.setSelected(true);
         txtSetor.setText("Coordenadoria de Informática");
         comboCampus.setSelectedItem(CampusIfes.SERRA);
-        txtEmailSetorExtensao.setText("extensao.serra@ifes.edu.br");
         txtInicioVigencia.setText("01/03/2026");
         txtFimVigencia.setText("30/11/2026");
         rbInovacaoSim.setSelected(true);
 
         comboModalidade.setSelectedItem(ModalidadeAcao.PROJETO);
+
+        // Preenche exemplo para a tabela de programação do evento caso troque para Evento
+        List<ItemProgramacaoEvento> eventoExemplo = new ArrayList<>();
+        eventoExemplo.add(new ItemProgramacaoEvento("Credenciamento e Abertura", "15/05/2026", "08:30 - 09:30", "Auditório Central", "Comissão"));
+        eventoExemplo.add(new ItemProgramacaoEvento("Mesa Redonda: Sustentabilidade e Robótica", "15/05/2026", "09:30 - 11:30", "Auditório Central", "Prof. Dr. Carlos"));
+        eventoExemplo.add(new ItemProgramacaoEvento("Oficina Prática de Sensores", "15/05/2026", "14:00 - 17:00", "Laboratório 102", "Estudantes Monitores"));
+        painelProgramacaoEvento.setItens(eventoExemplo);
 
         chkNaoPossuiCurricular.setSelected(false);
         txtCursosCurriculares.setText("Bacharelado em Sistemas de Informação, Engenharia de Controle e Automação");
@@ -1130,7 +1246,13 @@ public class TelaPrincipal extends JFrame {
         txtProtagonismoEstudantes.setText("Os alunos do Ifes liderarão a elaboração das apostilas didáticas e a ministração prática das oficinas como tutores.");
         txtInstalacoesEquipamentos.setText("Laboratório de Robótica do Campus Serra e salas de informática das escolas parceiras.");
 
-        txtCronograma.setText("Atividade 1 - Preparação dos kits e material didático: Mês 1 a 2\nAtividade 2 - Capacitação dos monitores extensionistas: Mês 2\nAtividade 3 - Aplicação das oficinas nas escolas: Mês 3 a 7\nAtividade 4 - Mostra de Robótica e avaliação final: Mês 8");
+        List<ItemCronograma> itensExemplo = new ArrayList<>();
+        itensExemplo.add(new ItemCronograma("Formalização de parcerias com escolas e divulgação do edital", 1, 2));
+        itensExemplo.add(new ItemCronograma("Capacitação dos estudantes extensionistas tutores", 2, 3));
+        itensExemplo.add(new ItemCronograma("Preparação e montagem dos kits didáticos de robótica", 2, 4));
+        itensExemplo.add(new ItemCronograma("Aplicação prática das oficinas de robótica nas escolas parceiras", 3, 7));
+        itensExemplo.add(new ItemCronograma("Mostra de Robótica, avaliação de impactos e elaboração de relatório final", 7, 8));
+        painelCronogramaVisual.setItens(itensExemplo);
         txtObservacoes.setText("Ação alinhada com as diretrizes do PDI institucional.");
     }
 
@@ -1140,7 +1262,6 @@ public class TelaPrincipal extends JFrame {
         txtSiape.setText("");
         txtEmail.setText("");
         txtSetor.setText("");
-        txtEmailSetorExtensao.setText("");
         txtInicioVigencia.setText("");
         txtFimVigencia.setText("");
         rbInovacaoNao.setSelected(true);
@@ -1151,7 +1272,7 @@ public class TelaPrincipal extends JFrame {
         for (JCheckBox chk : checkCampiMulticampi.values()) {
             chk.setSelected(false);
         }
-        txtProgramacaoEvento.setText("");
+        painelProgramacaoEvento.limpar();
         txtPrestacaoNome.setText("");
         txtPrestacaoRegistro.setText("");
         txtPrestacaoSiape.setText("");
@@ -1208,7 +1329,7 @@ public class TelaPrincipal extends JFrame {
         txtProtagonismoEstudantes.setText("");
         txtInstalacoesEquipamentos.setText("");
 
-        txtCronograma.setText("");
+        painelCronogramaVisual.limpar();
         txtObservacoes.setText("");
     }
 }

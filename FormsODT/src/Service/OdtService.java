@@ -166,9 +166,23 @@ public class OdtService {
         sb.append("    <style:style style:name=\"TableCellHead\" style:family=\"table-cell\">\n");
         sb.append("      <style:table-cell-properties fo:background-color=\"#E8EEF5\" fo:padding=\"4pt\" fo:border=\"0.5pt solid #999999\"/>\n");
         sb.append("    </style:style>\n");
-
+        sb.append("\n");
         sb.append("    <style:style style:name=\"TableCell\" style:family=\"table-cell\">\n");
         sb.append("      <style:table-cell-properties fo:padding=\"4pt\" fo:border=\"0.5pt solid #CCCCCC\"/>\n");
+        sb.append("    </style:style>\n");
+        sb.append("\n");
+        sb.append("    <style:style style:name=\"TableCellActive\" style:family=\"table-cell\">\n");
+        sb.append("      <style:table-cell-properties fo:background-color=\"#0066CC\" fo:padding=\"3pt\" fo:border=\"0.5pt solid #004C99\"/>\n");
+        sb.append("    </style:style>\n");
+        sb.append("\n");
+        sb.append("    <style:style style:name=\"TextCenter\" style:family=\"paragraph\">\n");
+        sb.append("      <style:paragraph-properties fo:text-align=\"center\"/>\n");
+        sb.append("      <style:text-properties fo:font-size=\"9pt\" fo:font-family=\"Liberation Sans, Arial\"/>\n");
+        sb.append("    </style:style>\n");
+        sb.append("\n");
+        sb.append("    <style:style style:name=\"TextCenterWhite\" style:family=\"paragraph\">\n");
+        sb.append("      <style:paragraph-properties fo:text-align=\"center\"/>\n");
+        sb.append("      <style:text-properties fo:color=\"#FFFFFF\" fo:font-weight=\"bold\" fo:font-size=\"9pt\" fo:font-family=\"Liberation Sans, Arial\"/>\n");
         sb.append("    </style:style>\n");
         sb.append("  </office:automatic-styles>\n");
 
@@ -188,7 +202,6 @@ public class OdtService {
         escreverCampo(sb, "5. Cargo", f.getDadosCadastrais().getCargo() != null ? f.getDadosCadastrais().getCargo().getDescricao() : "-");
         escreverCampo(sb, "6. Setor", f.getDadosCadastrais().getSetor());
         escreverCampo(sb, "7. Campus", f.getDadosCadastrais().getCampus() != null ? f.getDadosCadastrais().getCampus().getNome() : "-");
-        escreverCampo(sb, "8. E-mail do setor de extensão do campus", f.getDadosCadastrais().getEmailSetorExtensao());
         escreverCampo(sb, "9. Início do período de vigência", f.getDadosCadastrais().getInicioVigencia());
         escreverCampo(sb, "10. Fim do período de vigência", f.getDadosCadastrais().getFimVigencia());
         escreverCampo(sb, "11. A proposta desenvolve técnica, método ou modelo inovador?", f.getDadosCadastrais().getPropostaInovadora() != null ? f.getDadosCadastrais().getPropostaInovadora().getDescricao() : "-");
@@ -212,7 +225,7 @@ public class OdtService {
             escreverCampo(sb, "13. Unidades onde a ação está sendo executada", campiStr.length() > 0 ? campiStr.toString() : "Nenhuma unidade selecionada");
         } else if (mod == ModalidadeAcao.EVENTO) {
             sb.append("      <text:h text:style-name=\"SecHeading\" text:outline-level=\"2\">SEÇÃO ESPECÍFICA: EVENTO</text:h>\n");
-            escreverCampoTextoLongo(sb, "15. Programação do evento", f.getModalidadeEspecifica().getProgramacaoEvento());
+            escreverProgramacaoEventoComTabela(sb, f.getModalidadeEspecifica());
         } else if (mod == ModalidadeAcao.PRESTACAO_SERVICOS) {
             sb.append("      <text:h text:style-name=\"SecHeading\" text:outline-level=\"2\">SEÇÃO ESPECÍFICA: PRESTAÇÃO DE SERVIÇO</text:h>\n");
             escreverCampo(sb, "16. Nome do responsável técnico", f.getModalidadeEspecifica().getPrestacaoNomeResponsavel());
@@ -306,7 +319,7 @@ public class OdtService {
 
         // IX. CRONOGRAMA
         sb.append("      <text:h text:style-name=\"SecHeading\" text:outline-level=\"1\">CRONOGRAMA E OBSERVAÇÕES</text:h>\n");
-        escreverCampoTextoLongo(sb, "57. Atividades e Cronograma", f.getCronograma().getAtividadesCronograma());
+        escreverCronogramaComMatriz(sb, f.getCronograma());
         escreverCampoTextoLongo(sb, "58. Observações complementares", f.getCronograma().getObservacoes());
 
         // Campos de Assinaturas institucionais
@@ -350,6 +363,124 @@ public class OdtService {
                 }
             }
         }
+    }
+
+    private void escreverCronogramaComMatriz(StringBuilder sb, Model.Cronograma cro) {
+        sb.append("      <text:p text:style-name=\"BodyPara\">");
+        sb.append("<text:span text:style-name=\"FieldLabel\">57. Atividades e Cronograma de Execução:</text:span>");
+        sb.append("</text:p>\n");
+
+        if (cro.getItens() == null || cro.getItens().isEmpty()) {
+            escreverCampoTextoLongo(sb, "Detalhamento", cro.getAtividadesCronograma());
+            return;
+        }
+
+        // 1. Lista descritiva (padrão solicitado na Orientação Normativa CAEX 01/2020)
+        for (int i = 0; i < cro.getItens().size(); i++) {
+            Model.ItemCronograma item = cro.getItens().get(i);
+            sb.append("      <text:p text:style-name=\"BodyPara\">")
+              .append("<text:span text:style-name=\"FieldLabel\">Atividade ").append(i + 1).append(" - </text:span>")
+              .append("<text:span text:style-name=\"FieldValue\">").append(escapeXml(item.getDescricao())).append(" ... ")
+              .append(escapeXml(item.getPeriodoFormatado())).append("</text:span>")
+              .append("</text:p>\n");
+        }
+
+        // 2. Determina o maior mês para dimensionar a matriz do calendário
+        int maxMes = 12;
+        for (Model.ItemCronograma item : cro.getItens()) {
+            if (item.getMesFim() > maxMes) {
+                maxMes = item.getMesFim();
+            }
+        }
+
+        // 3. Tabela Matriz do Cronograma (Gráfico de Gantt em ODT)
+        sb.append("      <text:p text:style-name=\"SecHeading\"><text:line-break/>Matriz de Execução Mensal (Cronograma Físico):</text:p>\n");
+        sb.append("      <table:table table:name=\"TabelaCronogramaMatriz\">\n");
+        sb.append("        <table:table-column table:number-columns-repeated=\"1\"/>\n"); // #
+        sb.append("        <table:table-column table:number-columns-repeated=\"1\"/>\n"); // Atividade
+        sb.append("        <table:table-column table:number-columns-repeated=\"1\"/>\n"); // Período
+        sb.append("        <table:table-column table:number-columns-repeated=\"").append(maxMes).append("\"/>\n"); // Meses M1..MN
+
+        // Cabeçalho da Tabela
+        sb.append("        <table:table-header-rows>\n");
+        sb.append("          <table:table-row>\n");
+        sb.append("            <table:table-cell table:style-name=\"TableCellHead\"><text:p text:style-name=\"TextCenter\">#</text:p></table:table-cell>\n");
+        sb.append("            <table:table-cell table:style-name=\"TableCellHead\"><text:p text:style-name=\"TextCenter\">Atividade</text:p></table:table-cell>\n");
+        sb.append("            <table:table-cell table:style-name=\"TableCellHead\"><text:p text:style-name=\"TextCenter\">Período</text:p></table:table-cell>\n");
+        for (int m = 1; m <= maxMes; m++) {
+            sb.append("            <table:table-cell table:style-name=\"TableCellHead\"><text:p text:style-name=\"TextCenter\">M").append(m).append("</text:p></table:table-cell>\n");
+        }
+        sb.append("          </table:table-row>\n");
+        sb.append("        </table:table-header-rows>\n");
+
+        // Linhas de Atividades
+        for (int i = 0; i < cro.getItens().size(); i++) {
+            Model.ItemCronograma item = cro.getItens().get(i);
+            sb.append("        <table:table-row>\n");
+            sb.append("          <table:table-cell table:style-name=\"TableCell\"><text:p text:style-name=\"TextCenter\">").append(i + 1).append("</text:p></table:table-cell>\n");
+            sb.append("          <table:table-cell table:style-name=\"TableCell\"><text:p text:style-name=\"BodyPara\">").append(escapeXml(item.getDescricao())).append("</text:p></table:table-cell>\n");
+            sb.append("          <table:table-cell table:style-name=\"TableCell\"><text:p text:style-name=\"TextCenter\">").append(escapeXml(item.getPeriodoFormatado())).append("</text:p></table:table-cell>\n");
+
+            for (int m = 1; m <= maxMes; m++) {
+                if (item.isAtivoNoMes(m)) {
+                    sb.append("          <table:table-cell table:style-name=\"TableCellActive\"><text:p text:style-name=\"TextCenterWhite\">■</text:p></table:table-cell>\n");
+                } else {
+                    sb.append("          <table:table-cell table:style-name=\"TableCell\"><text:p text:style-name=\"TextCenter\">-</text:p></table:table-cell>\n");
+                }
+            }
+            sb.append("        </table:table-row>\n");
+        }
+
+        sb.append("      </table:table>\n");
+        sb.append("      <text:p text:style-name=\"BodyPara\"><text:line-break/></text:p>\n");
+    }
+
+    private void escreverProgramacaoEventoComTabela(StringBuilder sb, Model.SecaoModalidadeEspecifica sme) {
+        sb.append("      <text:p text:style-name=\"BodyPara\">");
+        sb.append("<text:span text:style-name=\"FieldLabel\">15. Programação do evento:</text:span>");
+        sb.append("</text:p>\n");
+
+        if (sme.getItensProgramacaoEvento() == null || sme.getItensProgramacaoEvento().isEmpty()) {
+            escreverCampoTextoLongo(sb, "Detalhamento", sme.getProgramacaoEvento());
+            return;
+        }
+
+        // Tabela ODT formatada para a programação do evento
+        sb.append("      <table:table table:name=\"TabelaProgramacaoEvento\">\n");
+        sb.append("        <table:table-column table:number-columns-repeated=\"1\"/>\n"); // #
+        sb.append("        <table:table-column table:number-columns-repeated=\"1\"/>\n"); // Atividade
+        sb.append("        <table:table-column table:number-columns-repeated=\"1\"/>\n"); // Data
+        sb.append("        <table:table-column table:number-columns-repeated=\"1\"/>\n"); // Horário
+        sb.append("        <table:table-column table:number-columns-repeated=\"1\"/>\n"); // Local
+        sb.append("        <table:table-column table:number-columns-repeated=\"1\"/>\n"); // Responsável
+
+        // Cabeçalho
+        sb.append("        <table:table-header-rows>\n");
+        sb.append("          <table:table-row>\n");
+        sb.append("            <table:table-cell table:style-name=\"TableCellHead\"><text:p text:style-name=\"TextCenter\">#</text:p></table:table-cell>\n");
+        sb.append("            <table:table-cell table:style-name=\"TableCellHead\"><text:p text:style-name=\"TextCenter\">Atividade / Conteúdo</text:p></table:table-cell>\n");
+        sb.append("            <table:table-cell table:style-name=\"TableCellHead\"><text:p text:style-name=\"TextCenter\">Data</text:p></table:table-cell>\n");
+        sb.append("            <table:table-cell table:style-name=\"TableCellHead\"><text:p text:style-name=\"TextCenter\">Horário</text:p></table:table-cell>\n");
+        sb.append("            <table:table-cell table:style-name=\"TableCellHead\"><text:p text:style-name=\"TextCenter\">Local</text:p></table:table-cell>\n");
+        sb.append("            <table:table-cell table:style-name=\"TableCellHead\"><text:p text:style-name=\"TextCenter\">Responsável</text:p></table:table-cell>\n");
+        sb.append("          </table:table-row>\n");
+        sb.append("        </table:table-header-rows>\n");
+
+        // Linhas de atividades do evento
+        for (int i = 0; i < sme.getItensProgramacaoEvento().size(); i++) {
+            Model.ItemProgramacaoEvento it = sme.getItensProgramacaoEvento().get(i);
+            sb.append("        <table:table-row>\n");
+            sb.append("          <table:table-cell table:style-name=\"TableCell\"><text:p text:style-name=\"TextCenter\">").append(i + 1).append("</text:p></table:table-cell>\n");
+            sb.append("          <table:table-cell table:style-name=\"TableCell\"><text:p text:style-name=\"BodyPara\">").append(escapeXml(it.getAtividade())).append("</text:p></table:table-cell>\n");
+            sb.append("          <table:table-cell table:style-name=\"TableCell\"><text:p text:style-name=\"TextCenter\">").append(escapeXml(it.getData())).append("</text:p></table:table-cell>\n");
+            sb.append("          <table:table-cell table:style-name=\"TableCell\"><text:p text:style-name=\"TextCenter\">").append(escapeXml(it.getHorario())).append("</text:p></table:table-cell>\n");
+            sb.append("          <table:table-cell table:style-name=\"TableCell\"><text:p text:style-name=\"BodyPara\">").append(escapeXml(it.getLocal())).append("</text:p></table:table-cell>\n");
+            sb.append("          <table:table-cell table:style-name=\"TableCell\"><text:p text:style-name=\"BodyPara\">").append(escapeXml(it.getResponsavel())).append("</text:p></table:table-cell>\n");
+            sb.append("        </table:table-row>\n");
+        }
+
+        sb.append("      </table:table>\n");
+        sb.append("      <text:p text:style-name=\"BodyPara\"><text:line-break/></text:p>\n");
     }
 
     private String escapeXml(String text) {
