@@ -179,6 +179,11 @@ public class DocumentoController {
             }
         }
 
+        // 21. Atividades Curriculares
+        if (!view.isNaoPossuiCurricularMarcado() && view.getCursosCurricularesSelecionados().isEmpty()) {
+            erros.add("Campo 21: Selecione pelo menos uma opção (um curso regular ou 'Não possui atividades curriculares').");
+        }
+
         // 23 e 24. Ação Institucional Vinculada
         if (view.getAcaoVinculadaSelecionada() == AcaoVinculadaTipo.EXTENSAO) {
             if (view.getTxtNumeroProcessoSipac().getText().trim().isEmpty()) {

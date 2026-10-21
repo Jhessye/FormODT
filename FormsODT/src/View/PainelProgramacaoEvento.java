@@ -108,12 +108,12 @@ public class PainelProgramacaoEvento extends JPanel {
 
         btnAdicionar = new JButton("+ Adicionar Linha");
         btnAdicionar.setFont(new Font("Segoe UI", Font.BOLD, 11));
-        btnAdicionar.setBackground(new Color(25, 125, 60));
-        btnAdicionar.setForeground(Color.WHITE);
-        btnAdicionar.setOpaque(true);
 
         btnRemover = new JButton("- Remover");
+        btnRemover.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+
         btnLimpar = new JButton("Limpar");
+        btnLimpar.setFont(new Font("Segoe UI", Font.PLAIN, 11));
 
         painelBotoes.add(btnAdicionar);
         painelBotoes.add(btnRemover);

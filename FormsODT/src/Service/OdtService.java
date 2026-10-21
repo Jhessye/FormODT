@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 import java.util.zip.CRC32;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -271,8 +272,7 @@ public class OdtService {
         sb.append("      <text:h text:style-name=\"SecHeading\" text:outline-level=\"1\">PÚBLICO ALVO E ORGANIZAÇÕES PARTICIPANTES</text:h>\n");
         escreverCampoTextoLongo(sb, "28. Caracterização do público alvo", f.getPublicoParceiros().getCaracterizacaoPublicoAlvo());
         escreverCampo(sb, "29. Estimativa de público externo", String.valueOf(f.getPublicoParceiros().getTotalPublicoExterno()));
-        escreverCampoTextoLongo(sb, "30. Organizações parceiras e descrição da participação", f.getPublicoParceiros().getOrganizacoesParceiras());
-        escreverCampo(sb, "31. O parceiro vai aportar recursos?", f.getPublicoParceiros().getParceiroAportaRecursos());
+        escreverOrganizacoesParceirasComTabela(sb, f.getPublicoParceiros().getOrganizacoes());
 
         // V. EQUIPE EXECUTORA
         sb.append("      <text:h text:style-name=\"SecHeading\" text:outline-level=\"1\">EQUIPE EXECUTORA</text:h>\n");
@@ -476,6 +476,46 @@ public class OdtService {
             sb.append("          <table:table-cell table:style-name=\"TableCell\"><text:p text:style-name=\"TextCenter\">").append(escapeXml(it.getHorario())).append("</text:p></table:table-cell>\n");
             sb.append("          <table:table-cell table:style-name=\"TableCell\"><text:p text:style-name=\"BodyPara\">").append(escapeXml(it.getLocal())).append("</text:p></table:table-cell>\n");
             sb.append("          <table:table-cell table:style-name=\"TableCell\"><text:p text:style-name=\"BodyPara\">").append(escapeXml(it.getResponsavel())).append("</text:p></table:table-cell>\n");
+            sb.append("        </table:table-row>\n");
+        }
+
+        sb.append("      </table:table>\n");
+        sb.append("      <text:p text:style-name=\"BodyPara\"><text:line-break/></text:p>\n");
+    }
+
+    private void escreverOrganizacoesParceirasComTabela(StringBuilder sb, List<Model.ItemOrganizacaoParceira> orgs) {
+        sb.append("      <text:p text:style-name=\"BodyPara\">")
+          .append("<text:span text:style-name=\"FieldLabel\">30 e 31. Organizações parceiras e aporte de recursos financeiros:</text:span>")
+          .append("</text:p>\n");
+
+        if (orgs == null || orgs.isEmpty()) {
+            sb.append("      <text:p text:style-name=\"FieldValue\">Nenhuma organização parceira cadastrada.</text:p>\n");
+            return;
+        }
+
+        sb.append("      <table:table table:name=\"TabelaOrganizacoesParceiras\">\n");
+        sb.append("        <table:table-column table:number-columns-repeated=\"1\"/>\n"); // #
+        sb.append("        <table:table-column table:number-columns-repeated=\"1\"/>\n"); // Organização
+        sb.append("        <table:table-column table:number-columns-repeated=\"1\"/>\n"); // Descrição
+        sb.append("        <table:table-column table:number-columns-repeated=\"1\"/>\n"); // Aporta Recursos?
+
+        // Cabeçalho
+        sb.append("        <table:table-header-rows>\n");
+        sb.append("          <table:table-row>\n");
+        sb.append("            <table:table-cell table:style-name=\"TableCellHead\"><text:p text:style-name=\"TextCenter\">#</text:p></table:table-cell>\n");
+        sb.append("            <table:table-cell table:style-name=\"TableCellHead\"><text:p text:style-name=\"TextCenter\">Organização Parceira</text:p></table:table-cell>\n");
+        sb.append("            <table:table-cell table:style-name=\"TableCellHead\"><text:p text:style-name=\"TextCenter\">Descrição da Participação</text:p></table:table-cell>\n");
+        sb.append("            <table:table-cell table:style-name=\"TableCellHead\"><text:p text:style-name=\"TextCenter\">Aporta Recursos Financeiros?</text:p></table:table-cell>\n");
+        sb.append("          </table:table-row>\n");
+        sb.append("        </table:table-header-rows>\n");
+
+        for (int i = 0; i < orgs.size(); i++) {
+            Model.ItemOrganizacaoParceira org = orgs.get(i);
+            sb.append("        <table:table-row>\n");
+            sb.append("          <table:table-cell table:style-name=\"TableCell\"><text:p text:style-name=\"TextCenter\">").append(i + 1).append("</text:p></table:table-cell>\n");
+            sb.append("          <table:table-cell table:style-name=\"TableCell\"><text:p text:style-name=\"BodyPara\">").append(escapeXml(org.getNome())).append("</text:p></table:table-cell>\n");
+            sb.append("          <table:table-cell table:style-name=\"TableCell\"><text:p text:style-name=\"BodyPara\">").append(escapeXml(org.getDescricaoParticipacao())).append("</text:p></table:table-cell>\n");
+            sb.append("          <table:table-cell table:style-name=\"TableCell\"><text:p text:style-name=\"TextCenter\">").append(escapeXml(org.getAportaRecursos())).append("</text:p></table:table-cell>\n");
             sb.append("        </table:table-row>\n");
         }
 

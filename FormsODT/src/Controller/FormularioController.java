@@ -69,7 +69,7 @@ public class FormularioController {
      */
     public void atualizarEstadoAtividadesCurriculares() {
         boolean naoPossui = view.isNaoPossuiCurricularMarcado();
-        view.getTxtCursosCurriculares().setEnabled(!naoPossui);
+        view.habilitarCursosCurriculares(!naoPossui);
     }
 
     /**
@@ -129,11 +129,7 @@ public class FormularioController {
         // 3. Caracterização
         Caracterizacao car = model.getCaracterizacao();
         car.setNaoPossuiCurricular(view.isNaoPossuiCurricularMarcado());
-        List<String> cursos = new ArrayList<>();
-        if (!car.isNaoPossuiCurricular() && !view.getTxtCursosCurriculares().getText().trim().isEmpty()) {
-            cursos.add(view.getTxtCursosCurriculares().getText().trim());
-        }
-        car.setCursosCurriculares(cursos);
+        car.setCursosCurriculares(view.getCursosCurricularesSelecionados());
         car.setFomentoSelecionados(view.getFomentosSelecionados());
         car.setFomentoOutro(view.getTxtFomentoOutro().getText().trim());
         car.setAcaoMaisAbrangente(view.getAcaoVinculadaSelecionada());
@@ -154,8 +150,7 @@ public class FormularioController {
         PublicoParceiros pp = model.getPublicoParceiros();
         pp.setCaracterizacaoPublicoAlvo(view.getTxtCaracterizacaoPublicoAlvo().getText().trim());
         pp.setTotalPublicoExterno(view.getNumeroPublicoExterno());
-        pp.setOrganizacoesParceiras(view.getTxtOrganizacoesParceiras().getText().trim());
-        pp.setParceiroAportaRecursos(view.getTxtParceiroRecursos());
+        pp.setOrganizacoes(view.getPainelOrganizacoesParceiras().getItens());
 
         // 6. Equipe Executora
         EquipeExecutora ee = model.getEquipeExecutora();

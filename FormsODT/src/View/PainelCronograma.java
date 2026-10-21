@@ -118,9 +118,6 @@ public class PainelCronograma extends JPanel {
 
         btnAdicionar = new JButton("+ Adicionar");
         btnAdicionar.setFont(new Font("Segoe UI", Font.BOLD, 11));
-        btnAdicionar.setBackground(new Color(25, 125, 60));
-        btnAdicionar.setForeground(Color.WHITE);
-        btnAdicionar.setOpaque(true);
 
         btnRemover = new JButton("- Remover");
         btnRemover.setFont(new Font("Segoe UI", Font.PLAIN, 11));
